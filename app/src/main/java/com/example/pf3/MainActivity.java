@@ -24,6 +24,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.Arrays;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -39,6 +40,7 @@ public class MainActivity extends Activity implements SensorEventListener {
     private final float[] rotationMatrix = new float[9];
     private final float[] orientationAngles = new float[3];
     private  double mov;
+    private final int size = 10;
 
     TextView text, direction;
     ImageView canvasView;
@@ -46,11 +48,12 @@ public class MainActivity extends Activity implements SensorEventListener {
     private Sensor countSensor, directionSensor;
     private Button clear;
     private int oldstep, step = 0;
-    private ShapeDrawable drawable,anchor1, anchor2;
     private Canvas canvas;
     private double dir;
     private int width, height;
 
+    private ShapeDrawable[] dots = new ShapeDrawable[100];
+    private int[][] rooms = new int[4][4];
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,36 +78,37 @@ public class MainActivity extends Activity implements SensorEventListener {
         display.getSize(size);
         width = size.x;
         height = size.y;
-        Toast.makeText(getApplication(),(String.valueOf(height)),Toast.LENGTH_SHORT).show();
-
-
-        // create a drawable object
-        relocate();
-//        drawable = new ShapeDrawable(new OvalShape());
-//        drawable.getPaint().setColor(Color.BLUE);
-//        drawable.setBounds(width/2-10, height/2-10, width/2+10, height/2+10);
-
-//        anchor1 = new ShapeDrawable(new OvalShape());
-//        anchor1.getPaint().setColor(Color.RED);
-//        anchor1.setBounds(width/2-10, height/2-10, width/2+10, height/2+10);
 
         // create a canvas
         canvasView = (ImageView) findViewById(R.id.canvas);
         Bitmap blankBitmap = Bitmap.createBitmap(width,height, Bitmap.Config.ARGB_8888);
         canvas = new Canvas(blankBitmap);
         canvasView.setImageBitmap(blankBitmap);
-
-        drawable.draw(canvas);
-
+        reset();
 
         startTimer();
 
         clear.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                //move();
+                reset();
             }
         });
 
+    }
+
+    private void reset() {
+        for (int i = 0; i < 25; i++) {
+            toRoom1(i);
+        }
+        for (int i = 25; i < 50; i++) {
+            toRoom2(i);
+        }
+        for (int i = 50; i < 75; i++) {
+            toRoom3(i);
+        }
+        for (int i = 75; i < 100; i++) {
+            toRoom4(i);
+        }
     }
 
     @Override
@@ -174,34 +178,93 @@ public class MainActivity extends Activity implements SensorEventListener {
         int yMove = 0;
         xMove = (int)(Math.sin(Math.toRadians(dir)) * 20);
         yMove = (int)(Math.cos(Math.toRadians(dir)) * 20);
-
-        Rect r = drawable.getBounds();
-
-        if (r.left + xMove < 0 || r.right + xMove > 1080 || r.top - yMove < 0 || r.bottom - yMove > 2066) {
-            relocate();
-        } else {
-            drawable.setBounds(r.left + xMove,r.top - yMove,r.right + xMove,r.bottom - yMove);
-            canvas.drawColor(Color.WHITE);
-            drawable.draw(canvas);
+        canvas.drawColor(Color.WHITE);
+        for (int i = 0; i < 100; i++) {
+            Rect r = dots[i].getBounds();
+            if (!survive(i)) {
+                relocate(i);
+            } else {
+                dots[i].setBounds(r.left + xMove,r.top - yMove,r.right + xMove,r.bottom - yMove);
+                dots[i].draw(canvas);
+            }
         }
-
-//        drawable.setBounds(r.left + xMove,r.top - yMove,r.right + xMove,r.bottom - yMove);
-//        canvas.drawColor(Color.WHITE);
-//        drawable.draw(canvas);
         drawRoom();
         canvasView.invalidate();
-
-        text.setText(String.valueOf(drawable.getBounds()));
     }
 
-    public void relocate() {
-        int randomX = new Random().nextInt(1080);
-        int randomY = new Random().nextInt(2066);
-        drawable = new ShapeDrawable(new OvalShape());
-        drawable.getPaint().setColor(Color.BLUE);
-        drawable.setBounds(randomX-10, randomY-10, randomX+10, randomY+10);
+    public void relocate(int i) {
+        int[] count = {0,0,0,0}; //should be 13(15?)
+        for (int j = 0; j < 100; j++) { //j stands for room number
+            if (inRoom1(j)) {
+                count[0]++;
+            } else if (inRoom2(j)) {
+                count[1]++;
+            } else if (inRoom3(j)) {
+                count[2]++;
+            } else if (inRoom4(j)) {
+                count[3]++;
+            }
+        }
+        int sum = 0;
+        for (int k = 0; k < 4; k++) {
+            count[k] = count[k] * count[k];
+            sum += count[k];
+        }
+        if (sum == 0 ){
+            Arrays.fill(count,25);
+            sum = 100;
+        }
 
+        int pos = new Random().nextInt(sum);
+        text.setText(String.valueOf(count[0]));
+
+        if (pos < count[0]) {
+            toRoom1(i);
+        }
+        if (pos >= count[0] && pos < count[0]+count[1]){
+            toRoom2(i);
+        }
+        if (pos >= count[0]+count[1] && pos < count[0]+count[1]+count[2]){
+            toRoom3(i);
+        }
+        if (pos >= count[0]+count[1]+count[2] && pos < sum) {
+            toRoom4(i);
+        }
     }
+
+    private void toRoom1(int i ) {
+        int randomX = new Random().nextInt(540);
+        int randomY = new Random().nextInt(1033);
+        dots[i] = new ShapeDrawable(new OvalShape());
+        dots[i].getPaint().setColor(Color.BLUE);
+        dots[i].setBounds(randomX-size, randomY-size, randomX+size, randomY+size);
+        dots[i].draw(canvas);
+    }
+    private void toRoom2(int i ) {
+        int randomX = new Random().nextInt(540) + 540;
+        int randomY = new Random().nextInt(1033);
+        dots[i] = new ShapeDrawable(new OvalShape());
+        dots[i].getPaint().setColor(Color.BLUE);
+        dots[i].setBounds(randomX-size, randomY-size, randomX+size, randomY+size);
+        dots[i].draw(canvas);
+    }
+    private void toRoom3(int i ) {
+        int randomX = new Random().nextInt(540);
+        int randomY = new Random().nextInt(1033) + 1033;
+        dots[i] = new ShapeDrawable(new OvalShape());
+        dots[i].getPaint().setColor(Color.BLUE);
+        dots[i].setBounds(randomX-size, randomY-size, randomX+size, randomY+size);
+        dots[i].draw(canvas);
+    }
+    private void toRoom4(int i ) {
+        int randomX = new Random().nextInt(540) + 540;
+        int randomY = new Random().nextInt(1033) + 1033;
+        dots[i] = new ShapeDrawable(new OvalShape());
+        dots[i].getPaint().setColor(Color.BLUE);
+        dots[i].setBounds(randomX-size, randomY-size, randomX+size, randomY+size);
+        dots[i].draw(canvas);
+    }
+
 
     public void drawRoom() {
 
@@ -210,11 +273,83 @@ public class MainActivity extends Activity implements SensorEventListener {
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(8);
         paint.setAntiAlias(true);
-
         canvas.drawLine(0, 0, 1080, 0, paint);
         canvas.drawLine(0, 2066, 1080, 2066, paint);
         canvas.drawLine(0, 0, 0, 2066, paint);
         canvas.drawLine(1080, 0, 1080, 2066, paint);
+
+
+    }
+
+    public boolean inRoom1(int i) {
+        if (dots[i] == null) {
+            return false;
+        }
+        Rect r = dots[i].getBounds();
+        int left = r.left;
+        int right = r.right;
+        int top = r.top;
+        int bottom = r.bottom;
+        if (left >= 0 && left <= 540 && top >= 0 && top <= 1033) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    public boolean inRoom2(int i) {
+        if (dots[i] == null) {
+            return false;
+        }
+        Rect r = dots[i].getBounds();
+        int left = r.left;
+        int right = r.right;
+        int top = r.top;
+        int bottom = r.bottom;
+        if (left >= 540 && left <= 1080 && top >= 0 && top <= 1033) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    public boolean inRoom3(int i) {
+        if (dots[i] == null) {
+            return false;
+        }
+        Rect r = dots[i].getBounds();
+        int left = r.left;
+        int right = r.right;
+        int top = r.top;
+        int bottom = r.bottom;
+        if (left >= 0 && left <= 540 && top >= 1033 && top <= 2066) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    public boolean inRoom4(int i) {
+        if (dots[i] == null) {
+            return false;
+        }
+        Rect r = dots[i].getBounds();
+        int left = r.left;
+        int right = r.right;
+        int top = r.top;
+        int bottom = r.bottom;
+        if (left >= 540 && left <= 1080 && top >= 1033 && top <= 2066) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    public boolean survive(int i) {
+        if (inRoom1(i) ||
+            inRoom2(i) ||
+            inRoom3(i) ||
+            inRoom4(i)) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     private Timer mTimer1;
@@ -239,7 +374,7 @@ public class MainActivity extends Activity implements SensorEventListener {
                 });
             }
         };
-        mTimer1.schedule(updatePosition, 1, 1000);
+        mTimer1.schedule(updatePosition, 1, 100);
     }
 
     @Override
