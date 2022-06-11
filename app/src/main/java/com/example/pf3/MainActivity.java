@@ -39,7 +39,8 @@ public class MainActivity extends Activity implements SensorEventListener {
 
     private final float[] rotationMatrix = new float[9];
     private final float[] orientationAngles = new float[3];
-    private  double mov;
+    private double mov;
+    private int accMov = 10;
     private final int size = 10;
 
     TextView text, direction;
@@ -90,13 +91,15 @@ public class MainActivity extends Activity implements SensorEventListener {
 
         clear.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
+                canvas.drawColor(Color.WHITE);
                 reset();
+                drawRoom();
             }
         });
 
     }
 
-    private void reset() { // TODO
+    private void reset() {
         for (int i = 0; i < 8; i++) {
             toRoom1(i);
         }
@@ -168,6 +171,7 @@ public class MainActivity extends Activity implements SensorEventListener {
             System.arraycopy(event.values, 0, accelerometerReading,
                     0, accelerometerReading.length);
             mov = (event.values[2] - 9.8) * (event.values[2] - 9.8);
+            accMov = accMov + (int)mov;
             text.setText(String.valueOf((int)mov));
             if ((int)mov > 2) {
                 //move();
@@ -191,7 +195,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 
         // "rotationMatrix" now has up-to-date information.
 
-        SensorManager.getOrientation(rotationMatrix, orientationAngles);
+        SensorManager.getOrientation(rotationMatrix, orientationAngles); //TODO direction
         dir = (orientationAngles[0] * 100) / 1.722;
         if (dir < 0) {
             dir = dir + 360;
@@ -203,7 +207,7 @@ public class MainActivity extends Activity implements SensorEventListener {
     public void move() {
         int xMove = 0;
         int yMove = 0;
-        xMove = (int)(Math.sin(Math.toRadians(dir)) * 20);
+        xMove = (int)(Math.sin(Math.toRadians(dir)) * 20); //TODO actual distance not 20
         yMove = (int)(Math.cos(Math.toRadians(dir)) * 20);
         canvas.drawColor(Color.WHITE);
         for (int i = 0; i < 100; i++) {
@@ -410,7 +414,7 @@ public class MainActivity extends Activity implements SensorEventListener {
     }
     private void toRoom13(int i ) {
         int randomX = new Random().nextInt(303) + 299;
-        int randomY = new Random().nextInt(235) + 591;
+        int randomY = new Random().nextInt(160) + 666;
         dots[i] = new ShapeDrawable(new OvalShape());
         dots[i].getPaint().setColor(Color.BLUE);
         dots[i].setBounds(randomX-size, randomY-size, randomX+size, randomY+size);
@@ -654,7 +658,10 @@ public class MainActivity extends Activity implements SensorEventListener {
             public void run() {
                 mTimerHandler.post(new Runnable() {
                     public void run(){
-                        move();
+                        if (accMov > 1) {
+                            move();
+                        }
+                        accMov = 0;
                     }
                 });
             }
