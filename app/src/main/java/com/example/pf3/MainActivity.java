@@ -42,6 +42,7 @@ public class MainActivity extends Activity implements SensorEventListener {
     private double mov;
     private int accMov = 10;
     private final int size = 10;
+    private double heightAcc, S, D = 0;
 
     TextView text, direction;
     ImageView canvasView;
@@ -170,9 +171,12 @@ public class MainActivity extends Activity implements SensorEventListener {
         if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
             System.arraycopy(event.values, 0, accelerometerReading,
                     0, accelerometerReading.length);
+
             mov = (event.values[2] - 9.8) * (event.values[2] - 9.8);
             accMov = accMov + (int)mov;
-            text.setText(String.valueOf((int)mov));
+            heightAcc = event.values[2] - 9.8;
+            S = S + heightAcc;
+            //text.setText(String.valueOf((int)mov));
             if ((int)mov > 2) {
                 //move();
 
@@ -200,7 +204,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         if (dir < 0) {
             dir = dir + 360;
         }
-        direction.setText(String.valueOf((int)dir));
+        direction.setText(String.valueOf("Current Direction: " + (int)dir));
         // "orientationAngles" now has up-to-date information.
     }
 
@@ -217,10 +221,61 @@ public class MainActivity extends Activity implements SensorEventListener {
             } else {
                 dots[i].setBounds(r.left + xMove,r.top - yMove,r.right + xMove,r.bottom - yMove);
                 dots[i].draw(canvas);
+                int[] count = {0,0,0,0,0,0,0,0,0,0,0,0,0}; //should be 13
+                for (int j = 0; j < 100; j++) { //j stands for room number
+                    if (inRoom1(j)) {
+                        count[0]++;
+                    } else if (inRoom2(j)) {
+                        count[1]++;
+                    } else if (inRoom3(j)) {
+                        count[2]++;
+                    } else if (inRoom4(j)) {
+                        count[3]++;
+                    } else if (inRoom5(j)) {
+                        count[4]++;
+                    } else if (inRoom6(j)) {
+                        count[5]++;
+                    } else if (inRoom7(j)) {
+                        count[6]++;
+                    } else if (inRoom8(j)) {
+                        count[7]++;
+                    } else if (inRoom9(j)) {
+                        count[8]++;
+                    } else if (inRoom10(j)) {
+                        count[9]++;
+                    } else if (inRoom11(j)) {
+                        count[10]++;
+                    } else if (inRoom12(j)) {
+                        count[11]++;
+                    } else if (inRoom13(j)) {
+                        count[12]++;
+                    }
+                }
+                int sum = 0;
+                for (int k = 0; k < 13; k++) {
+                    count[k] = count[k] * count[k];
+                    sum += count[k];
+                }
+                if (sum == 0 ){
+                    Arrays.fill(count,7);
+                    sum = 100;
+                }
+                text.setText("Current Room: " + String.valueOf(getIndexOfLargest(count) + 1));
             }
         }
         drawRoom();
         canvasView.invalidate();
+    }
+    public int getIndexOfLargest( int[] array )
+    {
+        if ( array == null || array.length == 0 ) return -1; // null or empty
+
+        int largest = 0;
+        for ( int i = 1; i < array.length; i++ )
+        {
+            if ( array[i] > array[largest] ) largest = i;
+        }
+        return largest; // position of the first largest found
     }
 
     public void relocate(int i) {
@@ -652,6 +707,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         }
     }
 
+    private int temp = 0;
     private void startTimer(){
         mTimer1 = new Timer();
         updatePosition = new TimerTask() {
@@ -662,6 +718,15 @@ public class MainActivity extends Activity implements SensorEventListener {
                             move();
                         }
                         accMov = 0;
+                        if (temp < 10) {
+                            D = D + S;
+
+                            temp++;
+                        } else {
+                            temp = 0;
+                            //text.setText(String.valueOf((int)S));
+                            S = 0;
+                        }
                     }
                 });
             }
